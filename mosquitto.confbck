@@ -1,0 +1,25 @@
+connection thingspeak_bridge
+address mqtt3.thingspeak.com:1883
+
+clientid  DSQABBs2CSsqBT0aPQMsKAU
+username  DSQABBs2CSsqBT0aPQMsKAU
+password  wPShyIblunYe0ufklzfWNluc
+
+cleansession true
+start_type automatic
+notifications false
+try_private false
+bridge_protocol_version mqttv311
+keepalive_interval 60
+restart_timeout 5
+
+# 1) ThingSpeak -> Mosquitto local (espelhar dados do canal)
+topic channels/3264524/subscribe/# in 0
+
+# 2) Mosquitto local -> ThingSpeak (enviar dados/comandos)
+# Use o tópico de publish do ThingSpeak (payload pode ser field1=...&field2=... ou valor puro em /fields/fieldN)
+topic channels/3264524/publish out 0
+topic channels/3264524/publish/fields/# out 0
+
+# Nota: a Write API Key não é exigida quando você usa mqtt3.thingspeak.com com credenciais do MQTT Device.
+# Se você estiver usando um fluxo legado que exija chave no tópico, use o broker/guia correspondente do ThingSpeak.

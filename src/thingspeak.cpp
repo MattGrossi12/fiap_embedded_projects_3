@@ -12,7 +12,7 @@
 // Publicação (MQTT API):
 //   - Broker: mqtt3.thingspeak.com
 //   - Topic:  channels/<CHANNEL_ID>/publish
-//   - Payload: field1=...&field2=...&field3=...&field4=...
+//   - Payload: field1=...&field2=...&...&field8=...
 //
 // Referência oficial (tópico + payload):
 //   https://www.mathworks.com/help/thingspeak/publishtoachannelfeed.html
@@ -24,12 +24,12 @@ static const char* TS_BROKER = "mqtt3.thingspeak.com";
 static const int   TS_PORT   = 1883;
 
 // >>> PREENCHA COM AS CREDENCIAIS DO SEU "MQTT DEVICE" (ThingSpeak)
-static const char* TS_MQTT_CLIENT_ID = "ENTER_MQTT_DEVICE_CLIENT_ID";
-static const char* TS_MQTT_USERNAME  = "ENTER_MQTT_DEVICE_USERNAME";
-static const char* TS_MQTT_PASSWORD  = "ENTER_MQTT_DEVICE_PASSWORD";
+static const char* TS_MQTT_CLIENT_ID = "LjorDzQRMQk9HSYgBzMnDQw";
+static const char* TS_MQTT_USERNAME  = "LjorDzQRMQk9HSYgBzMnDQw";
+static const char* TS_MQTT_PASSWORD  = "lZrnaeBTtIITotTutPvLq6/i";
 
 // >>> PREENCHA COM O ID DO SEU CANAL
-static const long  TS_CHANNEL_ID     = 123456;
+static const long  TS_CHANNEL_ID     = 3264524;
 
 WiFiClient tsClient;
 PubSubClient thingspeak(tsClient);
@@ -59,34 +59,27 @@ void connectThingSpeak() {
   }
 }
 
-static uint8_t bitmask4(const bool v[4]) {
-  uint8_t m = 0;
-  for (int i = 0; i < 4; i++) {
-    if (v[i]) m |= (1u << i);
-  }
-  return m;
-}
-
 void publishThingSpeak(bool gas[4], bool ldr[4], bool gasAlarm) {
+  (void)gasAlarm; // não usado (mantido apenas para compatibilidade da assinatura)
+
   char topic[64];
   snprintf(topic, sizeof(topic), "channels/%ld/publish", TS_CHANNEL_ID);
 
-  // Campos (2-4) - definição livre:
-  // field1: gasAlarm (0/1)
-  // field2: gasMask  (bit0..bit3)
-  // field3: luzMask  (bit0..bit3)
-  // field4: WiFi RSSI (dBm)
-  const uint8_t gasMask = bitmask4(gas);
-  const uint8_t luzMask = bitmask4(ldr);
-  const int rssi = WiFi.RSSI();
-
-  char payload[160];
+  // Mapeamento (8 dados):
+  // field1..field4 = Relés 1..4 (ldrState)
+  // field5..field8 = Gás  1..4 (gasDetected)
+  char payload[220];
   snprintf(payload, sizeof(payload),
-    "field1=%d&field2=%u&field3=%u&field4=%d",
-    gasAlarm ? 1 : 0,
-    gasMask,
-    luzMask,
-    rssi
+    "field1=%d&field2=%d&field3=%d&field4=%d&"
+    "field5=%d&field6=%d&field7=%d&field8=%d",
+    ldr[0] ? 1 : 0,
+    ldr[1] ? 1 : 0,
+    ldr[2] ? 1 : 0,
+    ldr[3] ? 1 : 0,
+    gas[0] ? 1 : 0,
+    gas[1] ? 1 : 0,
+    gas[2] ? 1 : 0,
+    gas[3] ? 1 : 0
   );
 
   const bool ok = thingspeak.publish(topic, payload);

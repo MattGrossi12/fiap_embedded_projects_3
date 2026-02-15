@@ -1,4 +1,4 @@
-# Projeto prático de nº2 do programa de especialização/residência em sistemas eletrônicos embarcados.
+# Projeto prático de nº3 do programa de especialização/residência em sistemas eletrônicos embarcados.
 Organizado em uma parceria MCTI/Softex + CPQD + FIAP
 
 ---
@@ -13,46 +13,27 @@ Link do projeto no Wokwi:
 
 Link do dashboard no Ubidots:
 
-[Ubidots_dashboard](https://stem.ubidots.com/app/dashboards/69701418221d689174891929)
+[Thingspeak](https://stem.ubidots.com/app/dashboards/69701418221d689174891929)
 
 ---
 ## Objetivo?
 <div align="justify">
 <br>
-Ferramentas: Wokwi +
-HiveMQ (ou outro broker MQTT) + Plataforma Ubidots. + Sistema desejado para Integração:
-<br>
-<br>
-1 - Criar
-device no Ubidots (2 a 4 variáveis de telemetria a critério do estudante) - Pode reutilizar a Atividade 1 mas tente ser criativo melhorando o projeto anterior.
-<br>
-<br>
-2 - Configurar
-dashboard com widgets para o device criado - DICA: Como o Dashboard tem limite de 10 Variaveis, pode usar variaveis de contexto para aumentar esse limite. Veja Aulas da Semana 6.
-<br>
-<br>
-3 - No Wokwi, publicar telemetria
-MQTT em algum Broker(MQTTx, HiveMQ, Mosquito, etc)
-<br>
-<br>
-4 - No
-Ubidots, configurar integração MQTT usando Token do device/variáveis para
-consumir dados do Broker (via bridge, plugin, ou fluxo suportado pela
-plataforma, pode ser criado um outro sistema com ESP32 como retransmissor como ex. da Semana 7).
-<br>
-<br>
-5 - Validar se
-os dados do device estão atualizando no dashboard do Ubidots - Gere um relatorio (pode ser capturado do monitor serial) da origem dos dados e comparar com o resultado final. Acrescente na documentação.
-<br>
-<br>
-6 - Inserir print do dashboard atualizado na documentação
-<br>
-<br>
-7- Criar uma documentação adequada mostrando um rascunho simples da arquitetura, objetivo do projeto, descrição geral do sistema, explicação de cada componente, seu fluxo de interação entre eles, descrição das variaveis de publicação e subscrição e conclusoes. Faça um documento formal com capa, titulo, indices, etc.
-<br>
-<br>
-8 - Fazer um pequeno video de poucos minutos mostrando o funcionamento dos sistemas, pode usar captura de tela.
+•    Criar um canal no ThingSpeak com 2 a 4 campos (livre definição).
 
+•    Configurar no Wokwi um streaming MQTT que publique mensagens (Dados de sensores, etc) no broker.
+
+•    No ThingSpeak, usar Write API Key para configurar ingestão/consumo do tópico MQTT publicado no Broker (via integração, MQTT fields update, ou método aceito pela plataforma).
+
+•    Verificar se os dados estão chegando no histórico do canal (gráficos e painéis).
+
+•    Realizar testes de envio e recepção de mensagem no broker MQTT e confirmar latência/estabilidade em 1 captura de log/cliente MQTT.
+
+•    Preencher o README simples no mesmo arquivo com orientações de funcionamento
+
+- Criar uma documentação adequada mostrando um rascunho simples da arquitetura, objetivo do projeto, descrição geral do sistema, explicação de cada componente, seu fluxo de interação entre eles, descrição das variaveis de publicação e subscrição e conclusoes. Faça um documento formal com capa, titulo, indices, etc.
+
+- Fazer um pequeno video de poucos minutos mostrando o funcionamento dos sistemas, pode usar captura de tela.
 ---
 ## Índice:
 
@@ -70,14 +51,13 @@ os dados do device estão atualizando no dashboard do Ubidots - Gere um relatori
 ---
 ## 1. Descrição do projeto:
 
-Este trabalho se objetivou a criação de um sistema simples de automação residêncial utilizando conceitos de sistemas embarcados e IOT, o escopo de funções abrange:
+Este trabalho se objetivou a criação de um sistema robusto de IOT para interface de um Supermercado, permitindo que possamos ter um controle das luzes da área externa de modo intertravado, permitindo o acionamento por botões, pelo dashboard, ou ainda, de maneira autônoma pela leitura do sensor de luz.
 
-> A medição de gases tóxicos/perigosos no ambiente residencial como gases combustíveis, incluindo GLP, propano, hidrogênio, metano e monóxido de carbono e emissão de alerta sonoro/visual em caso de detecção, além de aviso no dashboard.
+A medição de gases tóxicos/perigosos no setor de panificação, permitindo que possamos indentificar um possível vazamento de gás antes que o mesmo se alastre, provocando uma catastrófe.
 
-> A detecção da luminosidade da área externa, integrado a uma automação simples para acionamento das luzes quando o ambiente estiver escuro.
+Implementação de um broker MQTT que centraliza nossos dados e ainda fornece um dashboard.
 
-> A medição de temperatura ambiente, que poderia posteriormente ser interligada a um sistema de climatização caso o usuário assim deseje.
-
+Desenvolvimento de uma IHM à partir do display LCD 320x240 - IL9341, simplificando a centralização visual de nossos dados.
 
 ### 2. Dimensionamento e lista de materiais: 
 

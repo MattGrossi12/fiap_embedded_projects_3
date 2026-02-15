@@ -1,0 +1,141 @@
+# Mosquitto helper Makefile (bridge/local) with modular field publishing
+SHELL := /bin/bash
+
+HOST      ?= 127.0.0.1
+PORT      ?= 1883
+
+# Back-compat (older targets used TOPIC)
+TOPIC     ?= channels/3264524/subscribe/#
+
+# Preferred: separate topics for subscribe vs publish
+SUB_TOPIC ?= $(TOPIC)
+PUB_TOPIC ?= channels/3264562/publish
+
+CSV_FILE  ?= data/mqtt_log.csv
+
+RUN_DIR   := .run
+PID_FILE  := $(RUN_DIR)/mosquitto.pid
+LOG_FILE  := $(RUN_DIR)/mosquitto.log
+CONF      ?= mosquitto.conf
+
+MOSQUITTO_BIN ?= mosquitto
+MOSQUITTO_SUB ?= mosquitto_sub
+MOSQUITTO_PUB ?= mosquitto_pub
+
+.PHONY: broker-up broker-down broker-logs listen watch pub
+
+$(RUN_DIR):
+	@mkdir -p $(RUN_DIR)
+
+# Start Mosquitto and CONFIRM it is really listening (or fail with log excerpt)
+broker-up: $(RUN_DIR)
+	@if [ -f "$(PID_FILE)" ] && kill -0 $$(cat "$(PID_FILE)") 2>/dev/null; then \
+		echo "Mosquitto já está rodando (PID=$$(cat $(PID_FILE)))."; \
+	else \
+		echo "Subindo Mosquitto local em $(HOST):$(PORT)..."; \
+		rm -f "$(PID_FILE)"; \
+		if [ -f "$(CONF)" ]; then \
+			echo "Usando config: $(CONF)"; \
+			$(MOSQUITTO_BIN) -c "$(CONF)" -v >"$(LOG_FILE)" 2>&1 & echo $$! >"$(PID_FILE)"; \
+		else \
+			echo "Config não encontrada: $(CONF). Subindo com defaults."; \
+			$(MOSQUITTO_BIN) -p "$(PORT)" -v >"$(LOG_FILE)" 2>&1 & echo $$! >"$(PID_FILE)"; \
+		fi; \
+		# Aguarda o broker abrir a porta (até ~5s) \
+		for i in $$(seq 1 50); do \
+			if command -v nc >/dev/null 2>&1; then \
+				nc -z "$(HOST)" "$(PORT)" >/dev/null 2>&1 && break; \
+			else \
+				(ss -ltn 2>/dev/null | grep -q ":$(PORT) " ) && break; \
+			fi; \
+			sleep 0.1; \
+		done; \
+		if command -v nc >/dev/null 2>&1; then \
+			nc -z "$(HOST)" "$(PORT)" >/dev/null 2>&1 || (echo "ERRO: Mosquitto não abriu a porta $(PORT). Últimos logs:"; tail -n 50 "$(LOG_FILE)"; exit 2); \
+		else \
+			(ss -ltn 2>/dev/null | grep -q ":$(PORT) " ) || (echo "ERRO: Mosquitto não abriu a porta $(PORT). Últimos logs:"; tail -n 50 "$(LOG_FILE)"; exit 2); \
+		fi; \
+		echo "OK. PID=$$(cat $(PID_FILE)). Logs em $(LOG_FILE)."; \
+	fi
+
+broker-down:
+	@if [ -f "$(PID_FILE)" ] && kill -0 $$(cat "$(PID_FILE)") 2>/dev/null; then \
+		echo "Parando Mosquitto (PID=$$(cat $(PID_FILE)))..."; \
+		kill $$(cat "$(PID_FILE)") || true; \
+		rm -f "$(PID_FILE)"; \
+		echo "OK."; \
+	else \
+		echo "Mosquitto não parece estar rodando (sem PID válido)."; \
+	fi
+
+broker-logs:
+	@tail -n 200 -f "$(LOG_FILE)"
+
+# One command: start broker (if needed), subscribe, print and append CSV.
+# CSV format: ts_local,topic,<friendly names...>,raw
+listen: broker-up
+	@mkdir -p $$(dirname "$(CSV_FILE)")
+	@if [ ! -f "$(CSV_FILE)" ]; then \
+		echo 'ts_local,topic,"Sensor de gás 1","Sensor de gás 2","Sensor de gás 3","Sensor de gás 4","Iluminação da área externa 1","Iluminação da área externa 2","Iluminação da área externa 3","Iluminação da área externa 4",raw' > "$(CSV_FILE)"; \
+	fi
+	@echo "Escutando $(HOST):$(PORT) topic='$(SUB_TOPIC)'"
+	@echo "Salvando em: $(CSV_FILE)"
+	@$(MOSQUITTO_SUB) -h "$(HOST)" -p "$(PORT)" -t "$(SUB_TOPIC)" -v | \
+	while IFS= read -r line; do \
+		ts="$$(date -Iseconds)"; \
+		topic="$${line%% *}"; \
+		raw="$${line#* }"; \
+		f1="$$(echo "$$raw" | sed -n 's/.*field1=\([^&]*\).*/\1/p')"; \
+		f2="$$(echo "$$raw" | sed -n 's/.*field2=\([^&]*\).*/\1/p')"; \
+		f3="$$(echo "$$raw" | sed -n 's/.*field3=\([^&]*\).*/\1/p')"; \
+		f4="$$(echo "$$raw" | sed -n 's/.*field4=\([^&]*\).*/\1/p')"; \
+		f5="$$(echo "$$raw" | sed -n 's/.*field5=\([^&]*\).*/\1/p')"; \
+		f6="$$(echo "$$raw" | sed -n 's/.*field6=\([^&]*\).*/\1/p')"; \
+		f7="$$(echo "$$raw" | sed -n 's/.*field7=\([^&]*\).*/\1/p')"; \
+		f8="$$(echo "$$raw" | sed -n 's/.*field8=\([^&]*\).*/\1/p')"; \
+		echo "$$line"; \
+		printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,"%s"\n' "$$ts" "$$topic" "$${f1:-}" "$${f2:-}" "$${f3:-}" "$${f4:-}" "$${f5:-}" "$${f6:-}" "$${f7:-}" "$${f8:-}" "$$raw" >> "$(CSV_FILE)"; \
+	done
+
+watch: broker-up
+	@echo "Assistindo $(HOST):$(PORT) topic='$(SUB_TOPIC)' (sem CSV)"
+	@$(MOSQUITTO_SUB) -h "$(HOST)" -p "$(PORT)" -t "$(SUB_TOPIC)" -v
+
+# Modular publish:
+#   make pub f1=1 f2=1 f3=0 f4=1
+# Also accepts trailing commas (e.g., f1=1,)
+# If MSG is provided explicitly, it is used as-is.
+MSG ?=
+
+# Optional per-field values (leave empty to omit that field)
+f1 ?=
+f2 ?=
+f3 ?=
+f4 ?=
+f5 ?=
+f6 ?=
+f7 ?=
+f8 ?=
+
+pub: broker-up
+	@set -euo pipefail; \
+	if [ -n "$(MSG)" ]; then \
+		payload="$(MSG)"; \
+	else \
+		_v1="$(f1)"; _v2="$(f2)"; _v3="$(f3)"; _v4="$(f4)"; _v5="$(f5)"; _v6="$(f6)"; _v7="$(f7)"; _v8="$(f8)"; \
+		_v1="$${_v1%,}"; _v2="$${_v2%,}"; _v3="$${_v3%,}"; _v4="$${_v4%,}"; _v5="$${_v5%,}"; _v6="$${_v6%,}"; _v7="$${_v7%,}"; _v8="$${_v8%,}"; \
+		payload=""; \
+		for i in 1 2 3 4 5 6 7 8; do \
+			val="$$(eval echo \$\$_v$$i)"; \
+			if [ -n "$$val" ]; then \
+				[ -n "$$payload" ] && payload="$$payload&"; \
+				payload="$$payload""field$$i=$$val"; \
+			fi; \
+		done; \
+		if [ -z "$$payload" ]; then \
+			echo "ERRO: nenhum field definido. Use 'make pub f1=... f2=...' ou passe MSG=..."; \
+			exit 2; \
+		fi; \
+	fi; \
+	echo "PUB em $(HOST):$(PORT) topic='$(PUB_TOPIC)' msg='$$payload'"; \
+	$(MOSQUITTO_PUB) -h "$(HOST)" -p "$(PORT)" -t "$(PUB_TOPIC)" -m "$$payload"
