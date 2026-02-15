@@ -9,11 +9,11 @@ Organizado em uma parceria MCTI/Softex + CPQD + FIAP
 
 Link do projeto no Wokwi:
 
-[fiap_embedded_projects_3](https://wokwi.com/projects/454130082230099969)
+[fiap_embedded_projects_3](https://wokwi.com/projects/454603375687362561)
 
-Link do dashboard no Ubidots:
+Link do dashboard no Thingspeak:
 
-[Thingspeak](https://stem.ubidots.com/app/dashboards/69701418221d689174891929)
+[Thingspeak](https://thingspeak.mathworks.com/channels/3264524)
 
 ---
 ## Objetivo?
@@ -45,7 +45,7 @@ Link do dashboard no Ubidots:
 <br>3.1. [Critérios de projeto](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#31-crit%C3%A9rios-de-projeto)
 4. [Conexão ao canal de comunicação com o broker Mosquitto/EMQX](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#4-conex%C3%A3o-ao-canal-de-comunica%C3%A7%C3%A3o-com-o-broker-mosquittoemqx)
 5. [Arquitetura do firmware](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#5-arquitetura-do-firmware)
-6. [Interação ao Ubidots](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#6-intera%C3%A7%C3%A3o-ao-ubidots)
+6. [Interação ao Thingspeak](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#6-intera%C3%A7%C3%A3o-ao-ubidots)
 
 
 ---
@@ -203,15 +203,29 @@ Em nosso projeto, foi adotado o seguinte mapa de conexões:
 
 | **Pino** | **Função** |
 | :---: | :--- |
-| GPIO 1 | Entrada Analógica: Sensor de Temperatura (NTC) |
-| GPIO 2 | Entrada Analógica: Sensor de Luminosidade (LDR) |
-| GPIO 3 | Entrada Digital: Sensor de Gás (MQ — Saída Digital) |
-| GPIO 45 | Saída Digital: LCD - RS (Register Select) |
-| GPIO 48 | Saída Digital: LCD - EN (Enable) |
-| GPIO 39 | Saída Digital: LCD - D4 (Barramento de Dados) |
-| GPIO 40 | Saída Digital: LCD - D5 (Barramento de Dados) |
-| GPIO 41 | Saída Digital: LCD - D6 (Barramento de Dados) |
-| GPIO 42 | Saída Digital: LCD - D7 (Barramento de Dados) |
+| GPIO 11 | Entrada Digital: Sensor de Gás 1 (MQ — saída digital, ativo em LOW) |
+| GPIO 12 | Entrada Digital: Sensor de Gás 2 (MQ — saída digital, ativo em LOW) |
+| GPIO 13 | Entrada Digital: Sensor de Gás 3 (MQ — saída digital, ativo em LOW) |
+| GPIO 14 | Entrada Digital: Sensor de Gás 4 (MQ — saída digital, ativo em LOW) |
+| GPIO 9 | Entrada Digital: Sensor de Luminosidade (LDR) 1 |
+| GPIO 46 | Entrada Digital: Sensor de Luminosidade (LDR) 2 |
+| GPIO 3 | Entrada Digital: Sensor de Luminosidade (LDR) 3 |
+| GPIO 10 | Entrada Digital: Sensor de Luminosidade (LDR) 4 |
+| GPIO 16 | Saída Digital: Relé 1 |
+| GPIO 17 | Saída Digital: Relé 2 |
+| GPIO 18 | Saída Digital: Relé 3 |
+| GPIO 8 | Saída Digital: Relé 4 |
+| GPIO 7 | Entrada Digital: Botão 1 (latch) |
+| GPIO 6 | Entrada Digital: Botão 2 (latch) |
+| GPIO 5 | Entrada Digital: Botão 3 (latch) |
+| GPIO 4 | Entrada Digital: Botão 4 (latch) |
+| GPIO 2 | Saída Digital: Sirene/Alarme de Gás |
+| GPIO 42 | Saída Digital (SPI): TFT - CS |
+| GPIO 40 | Saída Digital (SPI): TFT - DC |
+| GPIO 41 | Saída Digital (SPI): TFT - RST |
+| GPIO 38 | Saída Digital (SPI): TFT - SCK |
+| GPIO 39 | Saída Digital (SPI): TFT - MOSI |
+| GPIO 36 | Entrada Digital (SPI): TFT - MISO |
 
 <div align="justify">
 
@@ -225,37 +239,21 @@ Essa é a representação visual das conexões:
 
 <div align="justify">
 
-## 4. Conexão ao canal de comunicação com o broker Mosquitto/EMQX
-
-Para simplificar o uso do broker emqx em conjunto ao mosquitto, foi desenvolvido este arquivo `Makefile` que possui 3 modos de operação:
-
-1. Ao usar este comando no terminal, é realizada a exclusão do arquivo mqtt_log.csv que armazena os dados de operação recebidos do sistema:
-```bash
-make clean
-```
-2. Ao usar este comando no terminal, é criado o canal de escuta, fazendo com que os dados enviados pelo sistema sejam recebidos e armazenados no arquivo mqtt_log.csv
-```bash
-make listen
-```
-3. Ao usar este comando no terminal, é criado o canal de publicação, o que permite enviar dados ao sistema, em nosso caso essa função foi implementada para uso futuro, atualmente não há vantagem/função para dados enviados ao sistema.
-```bash
-make pub
-```
-
-<div align="justify">
-
 Essa é a representação visual das conexões:
 
 <div align="center">
 
 | **Ação** |
 | :--- |
-| O estado inicial é formado por um boot em duas etapas, sendo esta a 1º, nesse momento é feita a conexão de Wi-fi, paralelamento é demonstrado o cabeçalho no display que pode ser observado na imagem abaixo.|
+| O 1º estágio do boot transiciona para uma breve tela exibindo "Display inicializado"|
 |![Ope_tel_1](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/ope_tel_1.png)|
-| O 2º estágio do boot transiciona para uma apresentação breve do programa de estudos, enquanto que paralalemante é feita a conexão ao broker MQTT|
+| O 2º estágio do boot apresenta rapidamente o escopo de projeto e exibe o nome do projetista.|
 |![Ope_tel_2](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/ope_tel_2.png)|
-| Essa já é a tela de operação em regime permanente, composta por 4 linhas, onde é possível acompanhar a temperatura atual, verificar o estado de detecção de gás, o estado das luzes autônomas e ainda, monitorar se o MQTT está operando normalmente, caso a conexão ao Wi-fi e ao MQTT estejam ativas, os dados da operação serão enviados ao broker onde serão armazenados no mqtt_log.csv|
+| O 3º estágio do boot demonstra os organizadores do curso.|
 |![Ope_tel_3](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/ope_tel_3.png)|
+| A tela final demonstra o processo de operação em regime permanente.|
+|![Ope_tel_4](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/ope_tel_4.png)|
+
 
 <div align="justify">
 
@@ -268,22 +266,23 @@ Essa é a representação visual das conexões:
 | [main.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/main.cpp)   | Responsável por processar e executar as funções primárias. |
 | [wifi.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/wifi.cpp)   | Centraliza os comandos necessários para conexão ao wi-fi. |
 | [mqtt.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/mqtt.cpp)  | Centraliza os comandos necessários para conexão ao broker. |
-| [ubidots.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/ubidots.cpp) | Adiciona o suporte ao Ubidots, permitindo a implementação de dashboards |
-| [wifi_con.h](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/wifi_con.h) | Chamada das funções recursivas de conexão ao wi-fi. |
+| [thingspeak.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/thingspeak.cpp) | Adiciona o suporte ao Thingspeak, permitindo a implementação de dashboards |
+| [tft.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/tft.cpp) | Adiciona o suporte ao uso do display TFT LCD 320x240 IL9341 |
+| [img1.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/img1.cpp) | Adiciona o cabeçalho de inicialização 1, que pode ser visto na próxima secção.|
+| [img2.cpp](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/img1.cpp) | Adiciona o cabeçalho de inicialização 2, que pode ser visto na próxima secção.|
+| [tft.h](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/wifi_con.h) | Chamada das funções recursivas de conexão ao display. |
 | [mqtt_con.h](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/mqtt_con.h) | Chamada das funções recursivas de conexão ao MQTT. |
-| [ubidots_con.h](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/ubidots_con.h) | Chamada das funções recursivas de conexão ao Ubidots |
+| [thingspeak_con.h](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/src/thingspeak_con.h) | Chamada das funções recursivas de conexão ao Thingspeak |
 
 <div align="justify">
 
-## 6. Interação ao Ubidots:
+## 6. Interação ao Thingspeak:
 
-Através desse processo torna-se possível a implementação de um dashboard para montiramento das grandezas, além disso, caso haja entradas intertravadas, adiciona asism um controle remoto do sistema, em nosso ambiente foi implementado desta forma:
+Através desse processo torna-se possível a implementação de um dashboard para montiramento das grandezas:
 
 | **Imagens do dashboard em operação** |
 | :--- |
 |![dash_1](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/dash_1.png)|
-|![dash_2](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/dash_2.png)|
-|![dash_3](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/dash_3.png)|
-|![dash_4](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/dash_4.png)|
+
 ---
 
