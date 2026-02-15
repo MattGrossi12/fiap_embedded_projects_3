@@ -18,4 +18,3 @@ void connectWiFi() {
 
   Serial.println("\n[WiFi] Conectado!");
 }
-

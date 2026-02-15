@@ -1,10 +1,21 @@
 #include "tft.h"
 
+#include <Arduino.h>
+
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-#include "boot_image_320x180.h"
 #include <pgmspace.h>
+
+// ----------------------------------------------------
+// Boot images (320x180) - arrays from img1.c / img2.c
+// img1 -> BootScreen1, img2 -> BootScreen2
+// ----------------------------------------------------
+extern const uint16_t img1[320 * 180];
+extern const uint16_t img2[320 * 180];
+static const int16_t BOOT_IMG_W = 320;
+static const int16_t BOOT_IMG_H = 180;
+
 
 // ------------------------------
 // Pinos escolhidos
@@ -137,6 +148,36 @@ void tftBegin() {
 }
 
 
+// ----------------------------------------------------
+// Renderiza uma imagem RGB565 (PROGMEM) por linhas
+// (evita estourar RAM com framebuffer completo)
+// ----------------------------------------------------
+static void drawBootImage320x180(const unsigned short* img) {
+  const int16_t x0 = 0;
+  const int16_t y0 = (tft.height() - BOOT_IMG_H) / 2; // 240->30
+
+  static uint16_t lineBuf[BOOT_IMG_W];
+
+  tft.startWrite();
+  tft.setAddrWindow(x0, y0, BOOT_IMG_W, BOOT_IMG_H);
+
+  const bool SWAP_BYTES = false; // ajuste se as cores ficarem "invertidas"
+
+  for (int16_t y = 0; y < BOOT_IMG_H; y++) {
+    for (int16_t x = 0; x < BOOT_IMG_W; x++) {
+      uint32_t idx = (uint32_t)y * (uint32_t)BOOT_IMG_W + (uint32_t)x;
+      uint16_t c = pgm_read_word(&img[idx]);
+      if (SWAP_BYTES) c = (uint16_t)((c << 8) | (c >> 8));
+      lineBuf[x] = c;
+    }
+    tft.writePixels(lineBuf, BOOT_IMG_W, true);
+  }
+
+  tft.endWrite();
+}
+
+
+
 void tftShowBootScreen1() {
   layoutDrawn = false;
 
@@ -144,43 +185,17 @@ void tftShowBootScreen1() {
   drawHeader("");
   drawFooter("");
 
-  printCentered(70,  "Sistema de monitoramento", 2, ILI9341_RED);
-  printCentered(100, "IOT",                      2, ILI9341_RED);
-  printCentered(130, "feito por",                2, ILI9341_RED);
-  printCentered(160, "Matheus Grossi",           2, ILI9341_RED);
-} 
-
+  // img1 (320x180) centralizada no eixo Y
+  drawBootImage320x180(img1);
+}
 void tftShowBootScreen2() {
   layoutDrawn = false;
 
   tft.fillScreen(ILI9341_BLACK);
 
-  // Imagem 320x180 ocupa toda a largura, centraliza no eixo Y
-  const int16_t x0 = 0;
-  const int16_t y0 = (tft.height() - BOOT2_IMG_H) / 2; // (240-180)/2 = 30
-
-  static uint16_t lineBuf[BOOT2_IMG_W];
-
-  tft.startWrite();
-  tft.setAddrWindow(x0, y0, BOOT2_IMG_W, BOOT2_IMG_H);
-
-  // Se as cores ficarem “estranhas”, troque para true
-  const bool SWAP_BYTES = false;
-
-  for (int16_t y = 0; y < BOOT2_IMG_H; y++) {
-    for (int16_t x = 0; x < BOOT2_IMG_W; x++) {
-      uint32_t idx = (uint32_t)y * (uint32_t)BOOT2_IMG_W + (uint32_t)x;
-      uint16_t c = pgm_read_word(&boot2_img_320x180[idx]);
-
-      if (SWAP_BYTES) c = (uint16_t)((c << 8) | (c >> 8));
-      lineBuf[x] = c;
-    }
-    tft.writePixels(lineBuf, BOOT2_IMG_W, true);
-  }
-
-  tft.endWrite();
+  // img2 (320x180) centralizada no eixo Y
+  drawBootImage320x180(img2);
 }
-  
 void tftShowReadyScreen() {
   layoutDrawn = false;
 

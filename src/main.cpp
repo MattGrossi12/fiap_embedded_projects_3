@@ -1,11 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <PubSubClient.h>
-#include <WiFiClientSecure.h>
 
 #include "wifi_con.h"
-#include "mqtt_con.h"          // Broker do seu streaming (EMQX)
-#include "thingspeak_con.h"    // Broker do ThingSpeak
+#include "thingspeak_con.h"
 #include "tft.h"
 
 //-------------------------------------------------
@@ -25,10 +22,10 @@ const uint8_t RELE_PINS[4] = {16, 17, 18, 8};
 const uint8_t BTN_PINS[4] = {7, 6, 5, 4};
 
 //-------------------------------------------------
-// Variáveis globais (usadas pelo mqtt.cpp / thingspeak.cpp via extern)
+// Variáveis globais (telemetria)
 //-------------------------------------------------
 bool gasDetected[4] = {false, false, false, false};
-bool ldrState[4]    = {false, false, false, false};
+bool ldrState[4]    = {false, false, false, false};  // estado final do relé (saída)
 bool anyGasDetected = false;
 
 //-------------------------------------------------
@@ -84,16 +81,13 @@ void setup() {
 
   // Wi-Fi
   connectWiFi();
-  delay(2000);
+  delay(500);
 
-  // Broker do seu streaming MQTT (TLS)
-  espClient.setInsecure();
-  connectMQTT();
-
-  // ThingSpeak MQTT (sem TLS, porta 1883)
+  // ThingSpeak MQTT
   tftShowBootScreen2();
-  //connectThingSpeak();
-  delay(2000);
+  connectThingSpeak();
+  delay(500);
+
   tftShowReadyScreen();
 }
 
@@ -101,14 +95,9 @@ void setup() {
 // Loop principal
 //-------------------------------------------------
 void loop() {
-
-  // Mantém conexão no seu broker (streaming MQTT)
-  if (!mqtt.connected()) {
-    connectMQTT();
-  }
-  mqtt.loop();
-
+  //-------------------------------------------------
   // Mantém conexão no ThingSpeak
+  //-------------------------------------------------
   if (!thingspeak.connected()) {
     connectThingSpeak();
   }
@@ -119,7 +108,7 @@ void loop() {
   //-------------------------------------------------
   anyGasDetected = false;
   for (int i = 0; i < 4; i++) {
-    gasDetected[i] = !digitalRead(GAS_PINS[i]); // mantém sua inversão
+    gasDetected[i] = !digitalRead(GAS_PINS[i]); // mantém sua inversão (ativo em LOW)
     if (gasDetected[i]) anyGasDetected = true;
   }
 
@@ -139,12 +128,10 @@ void loop() {
 
     // Se passou o tempo de debounce, considera como estado estável
     if ((now - lastDebounceTime[i]) >= DEBOUNCE_MS) {
-
       // Pull-down: clique na borda de subida (LOW -> HIGH)
       if (lastStableBtn[i] == LOW && raw == HIGH) {
         buttonLatched[i] = !buttonLatched[i]; // TOGGLE
       }
-
       lastStableBtn[i] = raw;
     }
 
@@ -173,26 +160,20 @@ void loop() {
   }
 
   //-------------------------------------------------
-  // TFT (1 Hz)
+  // TFT (1 Hz) - mostra status do ThingSpeak
   //-------------------------------------------------
-  if (now - lastLcd >= 1000) {
-    lastLcd = now;
-    tftUpdateStatus(ldrState, gasDetected, anyGasDetected, mqtt.connected());
+  static unsigned long lastLcdLocal = 0;
+  if (now - lastLcdLocal >= 1000) {
+    lastLcdLocal = now;
+    tftUpdateStatus(ldrState, gasDetected, anyGasDetected, thingspeak.connected());
   }
 
   //-------------------------------------------------
-  // Publica no seu broker (streaming MQTT) - 500 ms
+  // Publish ThingSpeak - respeita rate limit
   //-------------------------------------------------
-  if (now - lastMqtt >= 500) {
-    lastMqtt = now;
-    publishSensors();
-  }
-
-  //-------------------------------------------------
-  // Publica no ThingSpeak (>= ~15 s)
-  //-------------------------------------------------
-  if (now - lastThingSpeak >= THINGSPEAK_MIN_INTERVAL_MS) {
-    lastThingSpeak = now;
+  static unsigned long lastTs = 0;
+  if (now - lastTs >= THINGSPEAK_MIN_INTERVAL_MS) {
+    lastTs = now;
     publishThingSpeak(gasDetected, ldrState, anyGasDetected);
   }
 }
