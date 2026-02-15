@@ -45,7 +45,7 @@ Link do dashboard no Thingspeak:
 <br>3.1. [Critérios de projeto](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#31-crit%C3%A9rios-de-projeto)
 4. [Conexão ao canal de comunicação com o broker Mosquitto/EMQX](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#4-conex%C3%A3o-ao-canal-de-comunica%C3%A7%C3%A3o-com-o-broker-mosquittoemqx)
 5. [Arquitetura do firmware](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#5-arquitetura-do-firmware)
-6. [Interação ao Thingspeak](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#6-intera%C3%A7%C3%A3o-ao-ubidots)
+6. [Interação ao Thingspeak](https://github.com/MattGrossi12/fiap_embedded_projects_3/tree/main?tab=readme-ov-file#6-intera%C3%A7%C3%A3o-ao-thingspeak)
 
 
 ---
