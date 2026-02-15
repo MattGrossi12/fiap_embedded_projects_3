@@ -189,6 +189,9 @@ A Imagem abaixo ilustra o mapa de I/Os do microcontrolador de nosso projeto:
 <br>
 <div align="center">
 
+<br>
+
+
 | **ESP32-S3-DEVKITC-1-N8R8** |
 | :---: |
 ![ESP32-S3-DEVKITC-1-N8R8](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/images/esp_pinout.png)
@@ -200,6 +203,8 @@ Em nosso projeto, foi adotado o seguinte mapa de conexões:
 <br>
 
 <div align="center">
+
+<br>
 
 | **Pino** | **Função** |
 | :---: | :--- |
