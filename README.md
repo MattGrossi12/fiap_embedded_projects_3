@@ -15,6 +15,10 @@ Link do dashboard no Thingspeak:
 
 [Thingspeak](https://thingspeak.mathworks.com/channels/3264524)
 
+
+Link da documentação em pdf:
+[Documentação](https://github.com/MattGrossi12/fiap_embedded_projects_3/blob/main/doc/doc.pdf)
+
 ---
 ## Objetivo?
 <div align="justify">
