@@ -1,0 +1,312 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Pacotes Fundamentais ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[portuguese]{babel}
+\usepackage{graphicx}       % Para incluir imagens
+\usepackage{geometry}       % Para ajustar margens
+\usepackage{amsmath}        % Para fórmulas matemáticas avançadas
+\usepackage{float}          % Para posicionamento de figuras
+\usepackage{hyperref}       % Para links clicáveis
+\usepackage{booktabs}       % Para tabelas bonitas
+\usepackage{longtable}      % Para tabelas longas
+\usepackage{array}          % Para melhor controle de tabelas
+\usepackage{indentfirst}    % Indenta o primeiro parágrafo
+\usepackage{setspace}       % Para controle de espaçamento entre linhas
+
+% --- Configuração de Espaçamento Matemático ---
+\setlength{\jot}{15pt} 
+
+% --- Configuração das Molduras das Imagens ---
+\setlength{\fboxsep}{6pt}  % Espaço entre a imagem e a moldura (o recuo)
+\setlength{\fboxrule}{0.5pt} % Espessura da linha da moldura
+
+% --- Configuração de Links ---
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	filecolor=magenta,      
+	urlcolor=blue,
+}
+
+% --- Margens ---
+\geometry{left=3cm, top=3cm, right=2cm, bottom=2cm}
+
+\begin{document}
+	
+	% --- CAPA PERSONALIZADA ---
+	\begin{titlepage}
+		\begin{center}
+			% --- Área dos Logos (SEM MOLDURA) ---
+			\begin{figure}[h]
+				\centering
+				\includegraphics[height=1.3cm]{../images/softex.png} \hspace{1cm}
+				\includegraphics[height=1.3cm]{../images/cpqd.png} \hspace{1cm}
+				\includegraphics[height=1.3cm]{../images/fiap.png}
+			\end{figure}
+			
+			\vspace{1.5cm}
+			
+			% --- Cabeçalho Institucional ---
+			\large \textbf{MCTI/SOFTEX + CPQD + FIAP} \\
+			\large Programa de Especialização/Residência em Sistemas Eletrônicos Embarcados \\
+			
+			\vfill 
+			
+			% --- Título do Projeto ---
+			\Huge \textbf{Projeto Prático nº 3} \\[0.5cm]
+			\Large \textbf{Sistema de Monitoramento IoT para Supermercados}
+			
+			\vfill
+			
+			% --- Autor ---
+			\large \textbf{Matheus Grossi}
+			
+			\vspace{1cm}
+			
+			% --- Links de Acesso Rápido ---
+			\noindent\rule{8cm}{0.4pt} \\ 
+			\vspace{0.3cm}
+			\small \textbf{Acesso Rápido ao Projeto:} \\
+			\href{https://wokwi.com/projects/454603375687362561}{Simulação no Wokwi} $\bullet$ 
+			\href{https://thingspeak.mathworks.com/channels/3264524}{Dashboard Thingspeak} $\bullet$ 
+			\href{https://www.linkedin.com/in/matheus-grossi/}{LinkedIn}
+			
+			\vfill
+			
+			% --- Local e Data ---
+			\large Campinas, SP \\ 2026
+			
+		\end{center}
+	\end{titlepage}
+	
+	% --- Sumário ---
+	\tableofcontents
+	\newpage
+	
+	% --- Conteúdo ---
+	
+	\section{Objetivos}
+	
+	O projeto tem como metas principais:
+	\begin{itemize}
+		\item Criar um canal no ThingSpeak com 2 a 4 campos de livre definição.
+		\item Configurar no Wokwi um streaming MQTT que publique mensagens (dados de sensores, etc.) no broker.
+		\item No ThingSpeak, utilizar a \textit{Write API Key} para configurar a ingestão do tópico MQTT publicado no Broker.
+		\item Verificar se os dados estão chegando no histórico do canal (gráficos e painéis).
+		\item Realizar testes de envio e recepção de mensagens no broker MQTT e confirmar latência/estabilidade.
+		\item Documentar a arquitetura, descrição do sistema, fluxo de interação e variáveis de publicação/subscrição.
+	\end{itemize}
+	
+	\section{Descrição do Projeto}
+	
+	Este trabalho objetivou a criação de um sistema robusto de IoT para interface de um Supermercado, contemplando:
+	\begin{itemize}
+		\item \textbf{Controle de Iluminação:} Controle das luzes da área externa de modo intertravado (acionamento por botões, dashboard ou autônomo via sensor de luz).
+		\item \textbf{Segurança (Gases):} Medição de gases tóxicos/perigosos no setor de panificação para identificar vazamentos precocemente.
+		\item \textbf{Conectividade:} Implementação de um broker MQTT para centralização de dados e integração com dashboard.
+		\item \textbf{Interface Homem-Máquina (IHM):} Uso de display LCD 320x240 (IL9341) para centralização visual dos dados.
+	\end{itemize}
+	
+	\section{Dimensionamento e Lista de Materiais}
+	
+	\subsection{Cálculo do Resistor para os LEDs}
+	Serão utilizados dois LEDs: um \textbf{amarelo} (iluminação externa/relé) e um \textbf{vermelho} (alerta/GPIO). O cálculo baseia-se na tensão máxima do GPIO do ESP32 ($V_{pp} = 3.3V$).
+	
+	\subsubsection{Fórmulas Utilizadas}
+	\begin{enumerate}
+		\item \textbf{Resistência:}
+		\[ R(\Omega) = \frac{V_{pp} - V_{led}}{I_{led}} \]
+		
+		\item \textbf{Dissipação de Potência:}
+		\[ P(W) = U \cdot i \]
+		
+		\item \textbf{Potência Mínima do Resistor (Fator de Segurança $Fs = 50\%$):}
+		\[ P_{min} = P(W) \cdot (1 + Fs) \]
+	\end{enumerate}
+	
+	\begin{figure}[H]
+		\centering
+		% \fbox{\includegraphics[width=0.8\textwidth]{../images/tabela_led.png}}
+		\caption{Tabelas de referência para LEDs e Resistores (Consultar anexos)}
+	\end{figure}
+	
+	\subsection{Dimensionamento Aplicado}
+	
+	Abaixo demonstram-se os cálculos efetuados para a definição dos componentes.
+	
+	\subsubsection{LED Vermelho (Alerta)}
+	Dados: $V_{led} \approx 1.7V$, $I_{led} = 10mA$ ($0.01A$).
+	
+	\begin{align*}
+		R &= \frac{3.3 - 1.7}{0.01} = \frac{1.6}{0.01} = 160\Omega \\
+		P &= 1.6 \cdot 0.01 = 0.016W \\
+		P_{min} &= 0.016 \cdot 1.5 = 0.024W
+	\end{align*}
+	
+	\textbf{Conclusão:} Valor comercial adotado de \textbf{160R}. Potência comercial mais próxima: \textbf{1/16W} (0.0625W).
+	
+	\subsubsection{LED Amarelo (Iluminação)}
+	Dados: $V_{led} \approx 1.7V$, $I_{led} = 20mA$ ($0.02A$).
+	
+	\begin{align*}
+		R &= \frac{3.3 - 1.7}{0.02} = \frac{1.6}{0.02} = 80\Omega \\
+		P &= 1.6 \cdot 0.02 = 0.032W \\
+		P_{min} &= 0.032 \cdot 1.5 = 0.048W
+	\end{align*}
+	
+	\textbf{Conclusão:} Valor comercial adotado de \textbf{82R} (arredondamento). Potência comercial mais próxima: \textbf{1/16W} (0.0625W).
+	
+	\section{Lista de Materiais (BOM)}
+	
+	Abaixo, a relação dos componentes utilizados na aplicação:
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{ll}
+			\toprule
+			\textbf{Item} & \textbf{Descrição} \\ \midrule
+			Microcontrolador & ESP32-S3-DEVKITC-1-N8R8 \\
+			Display & LCD TFT IL9341 (240x320 Colorido) \\
+			Sensor & Módulo de Luminosidade LDR (HW-072) \\
+			Sensor & Sensor de Gás (MQ-6 / GLP) \\
+			Atuador & Módulo Relé 5V 1 Canal \\
+			Atuador & Buzzer Ativo 3.3V/5V \\
+			Iluminação & LED Difuso 5mm Vermelho \\
+			Iluminação & LED Difuso 5mm Amarelo \\
+			Resistor & 160R 1/16W \\
+			Resistor & 82R 1/16W (comercial) \\
+			Entrada & Push-Button (Chave Tátil 6x6x6mm) \\ \bottomrule
+		\end{tabular}
+		\caption{Lista de Materiais Utilizados}
+	\end{table}
+	
+	\begin{figure}[h]
+		\centering
+		% Adicionada moldura (fbox)
+		\fbox{\includegraphics[height=10cm]{../images/diagram.png}} 
+		\caption{Diagrama arquitetural}
+	\end{figure}
+	
+	\section{Critérios de Projeto e Pinagem}
+	
+	\subsection{Mapeamento de I/Os (Pinout)}
+	O mapa de conexões adotado para o ESP32-S3-DEVKITC-1-N8R8 é detalhado abaixo. A tabela a seguir descreve a função de cada GPIO utilizado.
+	
+	\begin{longtable}{|c|p{12cm}|}
+		
+		\hline
+		\textbf{GPIO} & \textbf{Função} \\ \hline
+		\endfirsthead
+		
+		\hline
+		\textbf{GPIO} & \textbf{Função} \\ \hline
+		\endhead
+		
+		\hline
+		\multicolumn{2}{|r|}{\small Continua...} \\ \hline
+		\endfoot
+		
+		\endlastfoot
+		
+		11 & Entrada Digital: Sensor de Gás 1  \\ \hline
+		12 & Entrada Digital: Sensor de Gás 2  \\ \hline
+		13 & Entrada Digital: Sensor de Gás 3  \\ \hline
+		14 & Entrada Digital: Sensor de Gás 4  \\ \hline
+		9  & Entrada Digital: Sensor de Luminosidade (LDR) 1 \\ \hline
+		46 & Entrada Digital: Sensor de Luminosidade (LDR) 2 \\ \hline
+		3  & Entrada Digital: Sensor de Luminosidade (LDR) 3 \\ \hline
+		10 & Entrada Digital: Sensor de Luminosidade (LDR) 4 \\ \hline
+		16 & Saída Digital: Relé 1 \\ \hline
+		17 & Saída Digital: Relé 2 \\ \hline
+		18 & Saída Digital: Relé 3 \\ \hline
+		8  & Saída Digital: Relé 4 \\ \hline
+		7  & Entrada Digital: Botão 1 (latch) \\ \hline
+		6  & Entrada Digital: Botão 2 (latch) \\ \hline
+		5  & Entrada Digital: Botão 3 (latch) \\ \hline
+		4  & Entrada Digital: Botão 4 (latch) \\ \hline
+		2  & Saída Digital: Sirene/Alarme de Gás \\ \hline
+		42 & Saída Digital (SPI): TFT - CS \\ \hline
+		40 & Saída Digital (SPI): TFT - DC \\ \hline
+		41 & Saída Digital (SPI): TFT - RST \\ \hline
+		38 & Saída Digital (SPI): TFT - SCK \\ \hline
+		39 & Saída Digital (SPI): TFT - MOSI \\ \hline
+		36 & Entrada Digital (SPI): TFT - MISO \\ \hline
+		
+		\noalign{\vspace{10pt}} 
+		\caption{Mapa de Conexões do Microcontrolador}
+		
+	\end{longtable}
+	
+	\begin{figure}[H]
+		\centering
+		% Adicionada moldura (fbox)
+		\fbox{\includegraphics[width=0.8\textwidth]{../images/ope_tel_0.png}}
+		\caption{Diagrama Visual das Conexões}
+	\end{figure}
+	
+	\subsection{Sequência de Inicialização (Boot)}
+	
+	O sistema possui uma sequência visual de inicialização no display TFT. Abaixo seguem as telas capturadas:
+	
+	\begin{figure}[H]
+		\centering
+		\fbox{\includegraphics[width=0.7\textwidth]{../images/ope_tel_1.png}}
+		\caption{Estágio 1: Inicialização do Display}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\fbox{\includegraphics[width=0.7\textwidth]{../images/ope_tel_2.png}}
+		\caption{Estágio 2: Escopo do Projeto}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\fbox{\includegraphics[width=0.7\textwidth]{../images/ope_tel_3.png}}
+		\caption{Estágio 3: Créditos}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\fbox{\includegraphics[width=0.7\textwidth]{../images/ope_tel_4.png}}
+		\caption{Regime Permanente: Tela de Operação}
+	\end{figure}
+	
+	\section{Arquitetura do Firmware}
+	
+	A estrutura de arquivos do projeto está organizada da seguinte forma:
+	
+	% TABELA 3: Largura ajustada
+	\begin{table}[H]
+		\centering
+		% Aumentado de l|p{9cm} para p{5cm}|p{10.5cm} para ocupar melhor a folha
+		\begin{tabular}{|p{5cm}|p{10.5cm}|}
+			\hline
+			\textbf{Arquivo} & \textbf{Função} \\ \hline
+			\texttt{main.cpp} & Processamento principal e execução das funções primárias. \\ \hline
+			\texttt{wifi.cpp} & Centraliza comandos para conexão Wi-Fi. \\ \hline
+			\texttt{mqtt.cpp} & Centraliza comandos para conexão ao broker MQTT. \\ \hline
+			\texttt{thingspeak.cpp} & Suporte ao Thingspeak. \\ \hline
+			\texttt{tft.cpp} & Suporte ao display TFT LCD IL9341. \\ \hline
+			\texttt{img1.cpp} & Cabeçalho de inicialização 1 (Imagem convertida). \\ \hline
+			\texttt{img2.cpp} & Cabeçalho de inicialização 2 (Imagem convertida). \\ \hline
+			\texttt{tft.h} & Header de funções recursivas de conexão ao display. \\ \hline
+			\texttt{mqtt\_con.h} & Header de funções recursivas de conexão ao MQTT. \\ \hline
+			\texttt{thingspeak\_con.h} & Header de funções recursivas de conexão ao Thingspeak. \\ \hline
+		\end{tabular}
+		\caption{Estrutura de Arquivos do Firmware}
+	\end{table}
+	
+	\section{Resultados e Interação (ThingSpeak)}
+	
+	A implementação permitiu o monitoramento via dashboard das grandezas do sistema. O funcionamento foi validado através da captura de dados e visualização gráfica.
+	
+	\begin{figure}[H]
+		\centering
+		\fbox{\includegraphics[width=0.8\textwidth]{../images/dash_1.png}}
+		\caption{Dashboard ThingSpeak em operação}
+	\end{figure}
+	
+\end{document}
