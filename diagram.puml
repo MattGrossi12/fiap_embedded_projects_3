@@ -9,6 +9,7 @@ skinparam roundcorner 12
 skinparam linetype ortho
 hide stereotype
 
+'mais espaço para o roteador não colapsar linhas
 skinparam nodesep 70
 skinparam ranksep 80
 
@@ -18,6 +19,9 @@ skinparam package {
 }
 skinparam rectangleBorderColor #666666
 
+'========================
+' Cores por classe
+'========================
 skinparam component<<IN>> {
   BackgroundColor #D9F2D9
   BorderColor #2E7D32
@@ -44,9 +48,16 @@ skinparam node {
   FontColor #111111
 }
 
+'========================
+' Núcleo
+'========================
 node "ESP32\n(Cérebro do Sistema)" as ESP32
 
+'========================
+' ENTRADAS (empilhadas)
+'========================
 package "ENTRADAS" as IN {
+
   package "Instrumentos de campo" as FIELD {
     component "Botão 1" as btn1 <<IN>>
     component "Botão 2" as btn2 <<IN>>
@@ -77,10 +88,13 @@ package "ENTRADAS" as IN {
     ldr3 -[hidden]-> ldr4
   }
 
-  FIELD -[hidden]down-> GAS
-  GAS   -[hidden]down-> LDR
+  FIELD -[hidden]-> GAS
+  GAS   -[hidden]-> LDR
 }
 
+'========================
+' SAÍDAS
+'========================
 package "SAÍDAS" as OUT {
   package "Relés" as RELAYS {
     component "Relé 1" as r1 <<OUT>>
@@ -92,56 +106,66 @@ package "SAÍDAS" as OUT {
     r3 -[hidden]-> r4
   }
   component "Buzzer" as BUZZER <<OUT>>
-  RELAYS -[hidden]down-> BUZZER
+  RELAYS -[hidden]-> BUZZER
 }
 
+'========================
+' COMUNICAÇÃO
+'========================
 rectangle "COMUNICAÇÃO" as COMMS {
   component "Broker MQTT\n(Comandos ↔ Telemetria)" as MQTT <<INOUT>>
 }
 
+'========================
+' IHM (ancorada perto do ESP32)
+'========================
 package "IHM" as UI {
   component "Display ILI9341" as DISP <<IHM>>
 }
 
 '========================
-' Travas macro (reposicionamento do IHM)
-' - UI fica logo abaixo do ESP32 para encurtar o fio
+' Travas macro (SEM setas direcionais)
 '========================
 GAS -[hidden]-> ESP32
 ESP32 -[hidden]-> OUT
-COMMS -[hidden]down-> ESP32
+COMMS -[hidden]-> ESP32
 
-ESP32 -[hidden]down-> UI     ' << aproxima o IHM do ESP32
-UI -[hidden]-> OUT           ' mantém IHM no lado direito do miolo (sem ir pro canto)
+'Cola o IHM ao lado do ESP32 e evita que ele “vá pro fundo”
+ESP32 -[hidden]-> UI
+UI -[hidden]-> OUT
 
 '========================
-' Conexões diretas
+' Conexões diretas (Entradas -> ESP32)
 '========================
-btn1 -right-> ESP32
-btn2 -right-> ESP32
-btn3 -right-> ESP32
-btn4 -right-> ESP32
+btn1 --> ESP32
+btn2 --> ESP32
+btn3 --> ESP32
+btn4 --> ESP32
 
-gas1 -right-> ESP32
-gas2 -right-> ESP32
-gas3 -right-> ESP32
-gas4 -right-> ESP32
+gas1 --> ESP32
+gas2 --> ESP32
+gas3 --> ESP32
+gas4 --> ESP32
 
-ldr1 -right-> ESP32
-ldr2 -right-> ESP32
-ldr3 -right-> ESP32
-ldr4 -right-> ESP32
+ldr1 --> ESP32
+ldr2 --> ESP32
+ldr3 --> ESP32
+ldr4 --> ESP32
 
-MQTT -down-> ESP32 : comandos
-ESP32 -up-> MQTT : telemetria
+'MQTT bidirecional (sem setas direcionais especiais)
+MQTT --> ESP32 : comandos
+ESP32 --> MQTT : telemetria
 
-ESP32 -right-> r1
-ESP32 -right-> r2
-ESP32 -right-> r3
-ESP32 -right-> r4
-ESP32 -right-> BUZZER : alarme
+'========================
+' Conexões diretas (ESP32 -> Saídas / IHM)
+'========================
+ESP32 --> r1
+ESP32 --> r2
+ESP32 --> r3
+ESP32 --> r4
+ESP32 --> BUZZER : alarme
 
-'Display mais perto
-ESP32 -down-> DISP : SPI/GPIO
+'Display (agora fica curto porque o bloco UI está ancorado ao ESP32)
+ESP32 --> DISP : SPI/GPIO
 
 @enduml
